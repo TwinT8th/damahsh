@@ -24,9 +24,11 @@ public class CharacterMove : MonoBehaviour
     public float idleAnimSpeed = 0.2f;
     public float walkAnimSpeed = 0.2f;
 
-    [Header("벽 위치")]
+    [Header("벽 / 바닥 / 천장 위치")]
     public float leftLimit = -3f;
     public float rightLimit = 3f;
+    public float bottomLimit = -1.5f;    // 캐릭터가 내려갈 수 있는 최소 Y
+    public float topLimit = 1.5f;        // 캐릭터가 올라갈 수 있는 최대 Y
 
     [SerializeField] public Transform bedPosition; //수면 위치
 
@@ -83,12 +85,7 @@ public class CharacterMove : MonoBehaviour
 
         float step = (moveSpeed / (float)pixelsPerUnit) * Time.deltaTime;
 
-        Vector3 nextPos = transform.position + (Vector3)(moveDir.normalized * step);
 
-        // 벽 범위 제한 (좌우)
-        nextPos.x = Mathf.Clamp(nextPos.x, leftLimit, rightLimit);
-
-        transform.position = nextPos;
 
         if (IsBlocked(moveDir))
         {
@@ -97,11 +94,19 @@ public class CharacterMove : MonoBehaviour
             return;
         }
 
+        Vector3 nextPos = transform.position + (Vector3)(moveDir.normalized * step);
+
+
+        // 벽 범위 제한 (좌우)
+        nextPos.x = Mathf.Clamp(nextPos.x, leftLimit, rightLimit);
+        nextPos.y = Mathf.Clamp(nextPos.y, bottomLimit, topLimit);
+        transform.position = nextPos;
+
+
     }
 
     void DecideDirection()
     {
-        if (isSleeping) return;
         if (isSleeping) return;
 
         // 8가지 방향 + Idle(0,0)
@@ -213,10 +218,12 @@ public class CharacterMove : MonoBehaviour
     }
     bool IsBlocked(Vector2 dir)
     {
+        float distance = 0.2f; // 발 콜라이더 사이즈에 맞게 늘림
+
         RaycastHit2D hit = Physics2D.Raycast(
             footCollider.bounds.center,
             dir,
-            0.1f,
+            distance,
             LayerMask.GetMask("Furniture")
         );
 
