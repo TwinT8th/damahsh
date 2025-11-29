@@ -109,28 +109,37 @@ public class CharacterMove : MonoBehaviour
     {
         if (isSleeping) return;
 
-        // 8가지 방향 + Idle(0,0)
-        Vector2[] dirs = {
-        new Vector2(-1, 1),
-        new Vector2(0, 1),
-        new Vector2(1, 1),
+        // 70% 확률로 기존 방향 유지
+        if (moveDir != Vector2.zero && Random.value < 0.7f)
+        {
+            // 기존 방향 유지 + 약간의 랜덤(흔들림)
+            Vector2 jitter = new Vector2(
+                Random.Range(-0.3f, 0.3f),
+                Random.Range(-0.1f, 0.1f) // Y 방향 약하게
+            );
+            moveDir = (moveDir + jitter).normalized;
+        }
+        else
+        {
+            // 새 방향 고르기 : 좌/우 이동 비중 강화, 위아래 가중치↓
+            Vector2[] dirs = {
+            new Vector2(-1, 0),  // 왼
+            new Vector2(1, 0),   // 오른
+            new Vector2(-1, 0.3f),
+            new Vector2(1, 0.3f),
+            new Vector2(-1, -0.3f),
+            new Vector2(1, -0.3f),
+            Vector2.zero // Idle 하나만
+        };
 
-        new Vector2(-1, 0),
-        new Vector2(0, 0),
-        new Vector2(1, 0),
+            moveDir = dirs[Random.Range(0, dirs.Length)];
+        }
 
-        new Vector2(-1, -1),
-        new Vector2(0, -1),
-        new Vector2(1, -1)
-    };
-
-        moveDir = dirs[Random.Range(0, dirs.Length)];
-
-        // Idle인지 걷는지에 따라 지속시간 결정
+        // 이동/Idle 지속시간 조정
         if (moveDir == Vector2.zero)
             decisionTime = Random.Range(idleTimeRange.x, idleTimeRange.y);
         else
-            decisionTime = Random.Range(walkTimeRange.x, walkTimeRange.y);
+            decisionTime = Random.Range(walkTimeRange.x * 1.3f, walkTimeRange.y * 1.6f); // ← 걷기 더 오래
     }
 
     // =====================
@@ -183,6 +192,7 @@ public class CharacterMove : MonoBehaviour
             yield return null;
             info = anim.GetCurrentAnimatorStateInfo(0);
         }
+
 
         // WakeUp 클립이 끝날 때까지 대기
         float clipLength = info.length;
