@@ -56,3 +56,21 @@ TagManager:
   - name: UI
     uniqueID: 2949170467
     locked: 0
+  - name: HairFront
+    uniqueID: 1132541599
+    locked: 0
+  - name: ClothUnder
+    uniqueID: 1424878969
+    locked: 0
+  - name: ClothUpper
+    uniqueID: 422076053
+    locked: 0
+  - name: HairBack
+    uniqueID: 2208733449
+    locked: 0
+  - name: Head
+    uniqueID: 3257397913
+    locked: 0
+  - name: Access
+    uniqueID: 1452451719
+    locked: 0
