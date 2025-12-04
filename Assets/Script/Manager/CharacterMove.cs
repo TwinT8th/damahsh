@@ -30,13 +30,18 @@ public class CharacterMove : MonoBehaviour
     public float bottomLimit = -1.5f;    // 캐릭터가 내려갈 수 있는 최소 Y
     public float topLimit = 1.5f;        // 캐릭터가 올라갈 수 있는 최대 Y
 
-    [SerializeField] public Transform bedPosition; //수면 위치
+    [Header("방별 안전 위치")]
+    [SerializeField] private Transform[] roomSafePoints;
+
+    [Header("수면 위치")]
+    [SerializeField] public Transform bedPosition;
 
     [Header("Collider 참조")]
     public BoxCollider2D clickCollider;   // 부모 캐릭터에 큰 collider
     public BoxCollider2D footCollider;    // 자식 sprite 발 collider
 
     private bool isSleeping = false;
+    private bool isMoving = true;
 
     [Header("입력 체크")]
     private float lastInputTime = 0f;
@@ -50,6 +55,7 @@ public class CharacterMove : MonoBehaviour
         // hshSprite = GetComponent<SpriteRenderer>();
         DecideDirection();
         SetStandingCollider(); //초기 상태는 서 있기 (나중에 자고 있는 거로 바꿀때 여기 바꾸기)
+        isMoving = true;
     }
 
     // Update is called once per frame
@@ -65,7 +71,7 @@ public class CharacterMove : MonoBehaviour
 
 
         // 걷기/Idle 로직
-        if (timer >= decisionTime) 
+        if (timer >= decisionTime)
         {
             timer = 0f;
             DecideDirection(); //-1, 0, 1중 하나
@@ -81,11 +87,9 @@ public class CharacterMove : MonoBehaviour
     {
 
         //잘 땐 안 움직임
-        if (isSleeping) return;
+        if (isSleeping || !isMoving) return;
 
         float step = (moveSpeed / (float)pixelsPerUnit) * Time.deltaTime;
-
-
 
         if (IsBlocked(moveDir))
         {
@@ -96,14 +100,12 @@ public class CharacterMove : MonoBehaviour
 
         Vector3 nextPos = transform.position + (Vector3)(moveDir.normalized * step);
 
-
         // 벽 범위 제한 (좌우)
         nextPos.x = Mathf.Clamp(nextPos.x, leftLimit, rightLimit);
         nextPos.y = Mathf.Clamp(nextPos.y, bottomLimit, topLimit);
         transform.position = nextPos;
-
-
     }
+
 
     void DecideDirection()
     {
@@ -142,6 +144,71 @@ public class CharacterMove : MonoBehaviour
             decisionTime = Random.Range(walkTimeRange.x * 1.3f, walkTimeRange.y * 1.6f); // ← 걷기 더 오래
     }
 
+
+    //스와이프 중 정지
+    public void Freeze()
+    {
+        isMoving = false;
+        moveDir = Vector2.zero; // ★ 이동 방향 초기화
+        if (anim != null)
+            anim.speed = 0f;
+
+        if (clickCollider != null)
+            clickCollider.enabled = false;
+        if (footCollider != null)
+            footCollider.enabled = false;
+    }
+
+    public void Unfreeze()
+    {
+        isMoving = true;
+        if (anim != null)
+        {
+            anim.speed = 1f;
+        }
+
+        // collider는 상태에 따라 분기
+        if (!isSleeping)
+            SetStandingCollider();
+        else
+            SetSleepingCollider();
+
+    }
+
+
+    // 스냅 후 해당 방 안전 위치로 순간 이동
+    public void TeleportToRoom(int roomIndex)
+    {
+        // 현재 카메라 기준으로 X는 중앙에 고정
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        float targetX = cam.transform.position.x;
+
+        // 방마다 Y 위치만 safePoint에서 가져오고 싶다면:
+        float targetY = transform.position.y;
+
+        if (roomSafePoints != null &&
+            roomIndex >= 0 &&
+            roomIndex < roomSafePoints.Length &&
+            roomSafePoints[roomIndex] != null)
+        {
+            targetY = roomSafePoints[roomIndex].position.y;
+        }
+
+        transform.position = new Vector3(targetX, targetY, transform.position.z);
+
+        moveDir = Vector2.zero;
+    }
+
+    // ★★ 방이 바뀔 때마다, 그 방 기준으로 이동 가능 범위를 다시 설정하는 함수
+    public void SetRoomLimits(float centerX, float roomWidth)
+    {
+        float half = roomWidth * 0.5f;
+        leftLimit = centerX - half;
+        rightLimit = centerX + half;
+    }
+
     // =====================
     //    Sleep / Wake
     // =====================
@@ -152,7 +219,7 @@ public class CharacterMove : MonoBehaviour
         SetSleepingCollider();
         anim.SetTrigger("Sleep");
     }
-    
+
     private void GoToSleepAuto()
     {
         //안건드리면 자동으로 자러 감
@@ -160,7 +227,7 @@ public class CharacterMove : MonoBehaviour
         direction = 0;
         SetSleepingCollider();
         anim.SetTrigger("Sleep");
-    
+
     }
 
 
@@ -217,17 +284,24 @@ public class CharacterMove : MonoBehaviour
 
     private void SetStandingCollider()
     {
-        footCollider.enabled = true;     // 작은 hitbox 오프
-        clickCollider.enabled = false;   // 큰 클릭 콜라이더 비활성
+        if (footCollider != null)
+            footCollider.enabled = true;     // 작은 hitbox 오프
+        if (clickCollider != null)
+            clickCollider.enabled = false;   // 큰 클릭 콜라이더 비활성
     }
 
     private void SetSleepingCollider()
     {
-        footCollider.enabled = false;    // 충돌 필요 없음
-        clickCollider.enabled = true;    // 전신 클릭 가능
+        if (footCollider != null)
+            footCollider.enabled = false;    // 충돌 필요 없음
+        if (clickCollider != null)
+            clickCollider.enabled = true;    // 전신 클릭 가능
     }
+
     bool IsBlocked(Vector2 dir)
     {
+        if (footCollider == null) return false;
+
         float distance = 0.2f; // 발 콜라이더 사이즈에 맞게 늘림
 
         RaycastHit2D hit = Physics2D.Raycast(
@@ -257,5 +331,5 @@ public class CharacterMove : MonoBehaviour
     {
         transform.position = new Vector3(0, -0.72f, 0);
     }
-    
+
 }
