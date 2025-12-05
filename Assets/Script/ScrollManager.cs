@@ -79,11 +79,18 @@ public class ScrollManager : MonoBehaviour
             StopCoroutine(snapRoutine);
 
         isDragging = true;
-        if (character != null)
+
+        if (character != null && !character.IsSleeping()) // 조건 추가
         {
             character.Freeze();
             character.transform.SetParent(cam.transform, true);
         }
+
+        else if(character.IsSleeping())
+        {
+            character.Freeze();
+        }
+
     }
 
     public void OnManualDrag(float deltaX)
@@ -154,9 +161,19 @@ public class ScrollManager : MonoBehaviour
         {
             // 카메라 자식에서 떼고, 해당 방 기준으로 이동가능 범위/위치 설정
             character.transform.SetParent(null, true);
-            character.SetRoomLimits(roomCenterX[idx], roomWidth[idx]);
-            character.TeleportToRoom(idx);
-            character.Unfreeze();
+
+            if (character.IsSleeping())
+            {
+
+                character.Unfreeze(); // 애니메이션 속도만 복구 필요
+            }
+            else
+            {
+                // 깨어있을 때만 SafePoint 처리
+                character.SetRoomLimits(roomCenterX[idx], roomWidth[idx]);
+                character.TeleportToRoom(idx);
+                character.Unfreeze();
+            }
         }
     }
 

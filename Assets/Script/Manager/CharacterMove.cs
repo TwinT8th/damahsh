@@ -1,3 +1,4 @@
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -148,8 +149,10 @@ public class CharacterMove : MonoBehaviour
     //스와이프 중 정지
     public void Freeze()
     {
+        if (isSleeping) return; // 잠든 상태는 Freeze 금지
+
         isMoving = false;
-        moveDir = Vector2.zero; // ★ 이동 방향 초기화
+        moveDir = Vector2.zero; // 이동 방향 초기화
         if (anim != null)
             anim.speed = 0f;
 
@@ -179,6 +182,9 @@ public class CharacterMove : MonoBehaviour
     // 스냅 후 해당 방 안전 위치로 순간 이동
     public void TeleportToRoom(int roomIndex)
     {
+        if (isSleeping)
+            return;
+
         // 현재 카메라 기준으로 X는 중앙에 고정
         Camera cam = Camera.main;
         if (cam == null) return;
@@ -330,6 +336,11 @@ public class CharacterMove : MonoBehaviour
     public void WakeUpPlace()
     {
         transform.position = new Vector3(0, -0.72f, 0);
+    }
+
+    public bool IsSleeping()
+    {
+        return isSleeping;
     }
 
 }
