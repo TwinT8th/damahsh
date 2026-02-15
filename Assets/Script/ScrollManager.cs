@@ -36,7 +36,7 @@ public class ScrollManager : MonoBehaviour
 
 
     public CharacterMove character;
-
+    private bool holdCharacterAfterSnap = false; // sing 같은 이벤트로 고정할 때 사용
 
 
     private void Start()
@@ -178,22 +178,34 @@ public class ScrollManager : MonoBehaviour
 
         if (character != null)
         {
-            // 카메라 자식에서 떼고, 해당 방 기준으로 이동가능 범위/위치 설정
+            // 카메라 자식에서 떼기
             character.transform.SetParent(null, true);
 
             if (character.IsSleeping())
             {
-
-                character.Unfreeze(); // 애니메이션 속도만 복구 필요
+                // 자는 상태면 기존 정책 유지(원하면 여기서도 고정/이동 정책 바꿀 수 있음)
+                character.Unfreeze();
             }
             else
             {
                 // 깨어있을 때만 SafePoint 처리
                 character.SetRoomLimits(roomCenterX[idx], roomWidth[idx]);
                 character.TeleportToRoom(idx);
-                character.Unfreeze();
+
+                if (holdCharacterAfterSnap)
+                {
+                    //  sing 등으로 호출된 경우: 자동 이동만 멈추고 고정
+                    character.HoldPosition();
+                    holdCharacterAfterSnap = false;
+                }
+                else
+                {
+                    // 기존 스크롤 스냅 로직: 원래대로 풀어줌
+                    character.Unfreeze();
+                }
             }
         }
+
     }
 
 
@@ -237,4 +249,28 @@ public class ScrollManager : MonoBehaviour
         p.x = roomCenterX[idx] + cameraRoomOffsetX;
         cam.transform.position = p;
     }
+
+
+    // 캐릭터를 그 방 SafePoint에 고정(자동 이동 멈춤)
+    public void MoveForAction()
+    {
+        holdCharacterAfterSnap = true;   // 스냅 끝나면 Unfreeze 대신 HoldPosition 하도록
+        isDragging = false;              // 드래그 상태 강제 해제
+
+        if (snapRoutine != null)
+            StopCoroutine(snapRoutine);
+
+        // 캐릭터가 있으면 일단 자동 이동만 멈춤
+        if (character != null && !character.IsSleeping())
+        {
+            character.HoldPosition();
+            // 스크롤 드래그 때처럼 카메라에 붙여둘지 여부:
+            // sing 연출에서 "카메라 이동 중 캐릭터가 화면에서 안정적으로 보이게" 하려면 붙이는 게 안전함
+            character.transform.SetParent(cam.transform, true);
+        }
+
+        // 지금 카메라 X 위치에서 가장 가까운 방 찾고 스냅
+        FindNearestRoomAndSnap();
+    }
+
 }

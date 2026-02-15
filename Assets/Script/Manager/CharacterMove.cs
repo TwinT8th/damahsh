@@ -32,6 +32,7 @@ public class CharacterMove : MonoBehaviour
 
     [Header("방별 안전 위치")]
     [SerializeField] private Transform[] roomSafePoints;
+    [SerializeField] private Transform wakeUpPoint; // 인스펙터에서 연결
 
     [Header("수면 위치")]
     [SerializeField] public Transform bedPosition;
@@ -177,6 +178,22 @@ public class CharacterMove : MonoBehaviour
 
     }
 
+    // 자동 이동만 멈추고, 애니메이션은 정상 재생(Idle 등)하게 두는 고정용
+    public void HoldPosition()
+    {
+        if (isSleeping) return; // 자는 상태면 일단 그대로 두자(원하면 여기 정책 바꿀 수 있음)
+
+        isMoving = false;
+        moveDir = Vector2.zero;
+
+        // Freeze()는 anim.speed=0으로 '애니까지 정지'라서 여기선 하지 않음
+        if (anim != null)
+            anim.speed = 1f;
+
+        // 서 있는 상태의 콜라이더 유지(원하는 정책에 맞게)
+        SetStandingCollider();
+    }
+
 
     // 스냅 후 해당 방 안전 위치로 순간 이동
     public void TeleportToRoom(int roomIndex)
@@ -261,7 +278,8 @@ public class CharacterMove : MonoBehaviour
         yield return new WaitForSeconds(clipLength);
 
         // 여기서 자연스럽게 딱 끝나고 Idle로 넘어가기 직전
-        transform.position = new Vector3(0f, -0.72f, 0);
+        Vector3 p = wakeUpPoint.position;
+        transform.position = new Vector3(p.x, p.y, transform.position.z);
         SetStandingCollider();   // ← 깨어날 때 collider 원복
         isSleeping = false;
     }
@@ -323,7 +341,9 @@ public class CharacterMove : MonoBehaviour
 
     public void WakeUpPlace()
     {
-        transform.position = new Vector3(0, -0.72f, 0);
+        if (wakeUpPoint == null) return;
+        Vector3 p = wakeUpPoint.position;
+        transform.position = new Vector3(p.x, p.y, transform.position.z);
     }
 
     public bool IsSleeping()

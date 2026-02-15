@@ -10,6 +10,7 @@ public class AvatarLayer : MonoBehaviour
     public SpriteRenderer hairBackRenderer;
     public SpriteRenderer upperRenderer;
     public SpriteRenderer underRenderer;
+    public SpriteRenderer mouthRenderer;
 
     [Header("Sprite Arrays (Assign in Inspector)")]
     public Sprite[] bodySprites;
@@ -18,6 +19,7 @@ public class AvatarLayer : MonoBehaviour
     public Sprite[] hairBackSprites;
     public Sprite[] upperSprites;
     public Sprite[] underSprites;
+    public Sprite[] mouthSprites;
 
     public void SetFrame(int index)
     {
@@ -38,5 +40,8 @@ public class AvatarLayer : MonoBehaviour
 
         if (underSprites.Length > index)
             underRenderer.sprite = underSprites[index];
+
+        if (mouthSprites.Length > index)
+            mouthRenderer.sprite = mouthSprites[index];
     }
 }

@@ -47,6 +47,9 @@ TagManager:
   - name: Furniture
     uniqueID: 1756652123
     locked: 0
+  - name: LightFurn
+    uniqueID: 272528999
+    locked: 0
   - name: Character
     uniqueID: 4270168857
     locked: 0
@@ -73,4 +76,7 @@ TagManager:
     locked: 0
   - name: Access
     uniqueID: 1452451719
+    locked: 0
+  - name: LightCover
+    uniqueID: 3676670331
     locked: 0
