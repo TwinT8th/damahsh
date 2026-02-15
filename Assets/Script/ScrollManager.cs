@@ -9,12 +9,15 @@ public class ScrollManager : MonoBehaviour
     [SerializeField] private RectTransform scrollHandle;
 
     [Header("직접 지정하는 핸들 이동 범위")]
-    [SerializeField] private float handleMinX = -238f;
-    [SerializeField] private float handleMaxX = 238f;
+    [SerializeField] private float handleMinX = -620f;
+    [SerializeField] private float handleMaxX = -138f;
 
     [Header("방(배경) 설정")]
     [SerializeField] private List<Transform> backgroundRooms;
     // 각 방 배경 그룹 Transform (왼쪽→오른쪽 순)
+
+    [Header("카메라 기준 오프셋(카메라 중앙에서 얼마나 좌/우로 기준을 둘지)")]
+    [SerializeField] private float cameraRoomOffsetX = 3.8f;
 
     private float[] roomCenterX;   // 카메라가 바라볼 X
     private float[] roomWidth;     // 각 방의 실제 월드 폭 (Sprite 기준)
@@ -29,17 +32,29 @@ public class ScrollManager : MonoBehaviour
     private Coroutine snapRoutine = null;
     private bool isDragging = false;
 
+    private float minCamX, maxCamX;
+
+
     public CharacterMove character;
+
+
 
     private void Start()
     {
         AutoGenerateRoomPositions();
+
+        minCamX = roomCenterX[0] + cameraRoomOffsetX;
+        maxCamX = roomCenterX[roomCenterX.Length - 1] + cameraRoomOffsetX;
+
         SetPositionImmediate(currentRoomIndex);
         StartCoroutine(InitScrollHandle());
     }
 
+
     private void AutoGenerateRoomPositions()
     {
+
+
         int count = backgroundRooms.Count;
         roomCenterX = new float[count];
         roomWidth = new float[count];
@@ -63,6 +78,7 @@ public class ScrollManager : MonoBehaviour
                 Debug.LogWarning($"{room.name}에 SpriteRenderer가 없습니다!");
             }
         }
+
     }
 
     private IEnumerator InitScrollHandle()
@@ -98,12 +114,12 @@ public class ScrollManager : MonoBehaviour
         if (!isDragging) return;
 
         float move = deltaX * dragSensitivity;
-
         Vector3 pos = cam.transform.position;
-        pos.x += move;
+        pos.x = Mathf.Clamp(pos.x + move, minCamX, maxCamX);
         cam.transform.position = pos;
 
         UpdateScrollHandle();
+    
     }
 
     public void EndManualDrag()
@@ -124,7 +140,9 @@ public class ScrollManager : MonoBehaviour
 
         for (int i = 0; i < roomCenterX.Length; i++)
         {
-            float d = Mathf.Abs(camX - roomCenterX[i]);
+            float targetX = roomCenterX[i] + cameraRoomOffsetX; // ★ 비교 기준도 오프셋 포함
+            float d = Mathf.Abs(camX - targetX);
+
             if (d < nearest)
             {
                 nearest = d;
@@ -136,12 +154,13 @@ public class ScrollManager : MonoBehaviour
 
         if (snapRoutine != null)
             StopCoroutine(snapRoutine);
+
         snapRoutine = StartCoroutine(SnapToRoom(currentRoomIndex));
     }
 
     IEnumerator SnapToRoom(int idx)
     {
-        float targetX = roomCenterX[idx];
+        float targetX = roomCenterX[idx] + cameraRoomOffsetX;
 
         Vector3 start = cam.transform.position;
         Vector3 end = new Vector3(targetX, start.y, start.z);
@@ -186,7 +205,11 @@ public class ScrollManager : MonoBehaviour
         float camX = cam.transform.position.x;
 
         // roomCenterX[0] ~ roomCenterX[last]를 전체 구간으로 보고 보간
-        float t = Mathf.InverseLerp(roomCenterX[0], roomCenterX[roomCenterX.Length - 1], camX);
+        float t = Mathf.InverseLerp(
+    roomCenterX[0] + cameraRoomOffsetX,
+    roomCenterX[roomCenterX.Length - 1] + cameraRoomOffsetX,
+    camX
+);
         float newX = Mathf.Lerp(handleMinX, handleMaxX, t);
 
         Vector2 pos = scrollHandle.anchoredPosition;
@@ -211,7 +234,7 @@ public class ScrollManager : MonoBehaviour
         if (roomCenterX == null || roomCenterX.Length == 0) return;
 
         Vector3 p = cam.transform.position;
-        p.x = roomCenterX[idx];
+        p.x = roomCenterX[idx] + cameraRoomOffsetX;
         cam.transform.position = p;
     }
 }

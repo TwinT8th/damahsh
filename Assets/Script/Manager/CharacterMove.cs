@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 public class CharacterMove : MonoBehaviour
 {
@@ -16,7 +15,7 @@ public class CharacterMove : MonoBehaviour
 
     private float timer = 0f;
     private float decisionTime = 2f;
-    private int direction = 0; // -1: 왼쪽, 0: 멈춤, 1: 오른쪽
+    //private int direction = 0; // -1: 왼쪽, 0: 멈춤, 1: 오른쪽
     private Vector2 moveDir = Vector2.zero;
 
     [Header("애니메이션")]
@@ -182,27 +181,16 @@ public class CharacterMove : MonoBehaviour
     // 스냅 후 해당 방 안전 위치로 순간 이동
     public void TeleportToRoom(int roomIndex)
     {
-        if (isSleeping)
-            return;
-
-        // 현재 카메라 기준으로 X는 중앙에 고정
-        Camera cam = Camera.main;
-        if (cam == null) return;
-
-        float targetX = cam.transform.position.x;
-
-        // 방마다 Y 위치만 safePoint에서 가져오고 싶다면:
-        float targetY = transform.position.y;
+        if (isSleeping) return;
 
         if (roomSafePoints != null &&
             roomIndex >= 0 &&
             roomIndex < roomSafePoints.Length &&
             roomSafePoints[roomIndex] != null)
         {
-            targetY = roomSafePoints[roomIndex].position.y;
+            Vector3 p = roomSafePoints[roomIndex].position;
+            transform.position = new Vector3(p.x, p.y, transform.position.z);
         }
-
-        transform.position = new Vector3(targetX, targetY, transform.position.z);
 
         moveDir = Vector2.zero;
     }
@@ -221,7 +209,7 @@ public class CharacterMove : MonoBehaviour
     public void GoToSleep()
     {
         isSleeping = true;
-        direction = 0;                  // 이동 멈추기
+        //direction = 0;                  // 이동 멈추기
         SetSleepingCollider();
         anim.SetTrigger("Sleep");
     }
@@ -230,7 +218,7 @@ public class CharacterMove : MonoBehaviour
     {
         //안건드리면 자동으로 자러 감
         isSleeping = true;
-        direction = 0;
+        //direction = 0;
         SetSleepingCollider();
         anim.SetTrigger("Sleep");
 
@@ -273,7 +261,7 @@ public class CharacterMove : MonoBehaviour
         yield return new WaitForSeconds(clipLength);
 
         // 여기서 자연스럽게 딱 끝나고 Idle로 넘어가기 직전
-        transform.position = new Vector3(0, -0.72f, 0);
+        transform.position = new Vector3(0f, -0.72f, 0);
         SetStandingCollider();   // ← 깨어날 때 collider 원복
         isSleeping = false;
     }
