@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -14,8 +13,17 @@ public class ChatCommand : MonoBehaviour
 
     [Header("Commands")]
     [SerializeField] private List<ChatCommandEntry> commands = new(); //인스펙터에서 등록하는 키워드 목록
+    [SerializeField] private ChatLogUI chatLog;
 
+    [Header("NPC Reply Queue")]
+    [SerializeField] private float npcFirstDelay = 1f;     // 첫 답장까지 대기
+    [SerializeField] private float npcLineInterval = 0.8f; // 줄과 줄 사이 간격
+
+ 
     private readonly Dictionary<string, ChatCommandEntry> _map = new();
+
+    private readonly Queue<string> _npcQueue = new();
+    private Coroutine _npcReplyRoutine;
 
 
     // Start is called before the first frame update
@@ -73,50 +81,77 @@ public class ChatCommand : MonoBehaviour
         }
     }
 
+
+    private static bool ContainsWord(string text, string word)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(word)) return false;
+
+        // Normalize된 상태를 가정하고, 단어 경계 기준으로 검사
+        // "hi there" OK, "say hi" OK, "hike"는 X
+        return System.Text.RegularExpressions.Regex.IsMatch(
+            text,
+            $@"\b{System.Text.RegularExpressions.Regex.Escape(word)}\b"
+        );
+    }
+
     /// <summary>
     /// 입력값을 검사하고,
     /// 키워드와 일치하면 명령을 실행한다.
     /// </summary>
     public void Submit()
     {
-        // 입력값 저장
+        if (inputField == null) return;
+
+        // 1) 입력값 저장 (원문)
         string raw = inputField.text;
 
-        // 입력창 비우기
+        // 2) 입력창 비우기
         inputField.text = "";
 
-        // 다시 입력 가능 상태로 활성화
+        // 3) (선택) 다시 입력 포커스
         inputField.ActivateInputField();
 
-        // 공백/대소문자 등을 정리한 값
+        // 4) 공백만 입력은 무시
+        if (string.IsNullOrWhiteSpace(raw)) return;
+
+        // 5) 플레이어가 보낸 메시지는 무조건 로그에 찍기 (원문 그대로)
+        if (chatLog != null)
+            chatLog.AddPlayerMessage(raw);
+
+        // 6) 비교용 키 정규화
         var key = Normalize(raw);
 
-        // 빈 입력은 무시
-        if (string.IsNullOrEmpty(key)) return;
+        // 7) 특정 키워드면 NPC 자동 답장(원하는 규칙대로)
 
-        // 딕셔너리에서 해당 키 검색
+        //------------------------------------------------
+        if (chatLog != null && (ContainsWord(key, "hi") || ContainsWord(key, "hello")))
+        {
+            EnqueueNpc("> 안녕.");
+        }
+
+        if (chatLog != null && ContainsWord(key, "name"))
+        {
+            EnqueueNpc("> 나?", "> 부르고 싶은 대로 불러.");
+        }
+
+        // 8) 기존 명령 실행 로직 유지
         if (_map.TryGetValue(key, out var cmd))
         {
-            // 한 번만 실행되는 명령이고,
-            // 이미 사용했다면 재실행 방지
             if (cmd.oneShot && cmd.used)
             {
-                Debug.Log($"[ChatCommandConsole] 이미 사용한 명령: {cmd.keyword}");
+                Debug.Log($"[ChatCommand] 이미 사용한 명령: {cmd.keyword}");
                 return;
             }
 
-            // 사용 처리
             cmd.used = true;
-
-            // 인스펙터에서 연결한 이벤트 실행
             cmd.onMatched?.Invoke();
         }
         else
         {
-            // 일치하는 키워드가 없을 때
-            Debug.Log($"[ChatCommandConsole] 매칭 실패: '{raw}'");
+            Debug.Log($"[ChatCommand] 매칭 실패: '{raw}'");
         }
     }
+
 
     /// <summary>
     /// 문자열을 비교하기 쉽게 정리한다.
@@ -130,14 +165,63 @@ public class ChatCommand : MonoBehaviour
 
         s = s.Trim();
 
+        // 소문자
+        s = s.ToLowerInvariant();
+
+        // 문장부호/특수문자 제거하고(문자/숫자/공백만 남김)
+        // 예: "hi." -> "hi", "hello!!" -> "hello"
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"[^\p{L}\p{N}\s]+", "");
+
         // 공백 여러 개 → 하나로
         s = System.Text.RegularExpressions.Regex.Replace(s, @"\s+", " ");
 
-        // 대소문자 구분 제거
-        s = s.ToLowerInvariant();
-
         return s;
     }
+
+
+
+
+
+
+    private void EnqueueNpc(params string[] lines)
+    {
+        if (lines == null || lines.Length == 0) return;
+
+        foreach (var line in lines)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+                _npcQueue.Enqueue(line);
+        }
+
+        // 이미 실행 중이면 그냥 큐에만 쌓고 끝
+        if (_npcReplyRoutine == null)
+            _npcReplyRoutine = StartCoroutine(CoNpcReplyQueue());
+    }
+
+    private IEnumerator CoNpcReplyQueue()
+    {
+        // 첫 답장 딜레이 (사람이 생각하다 답장하는 느낌)
+        if (npcFirstDelay > 0f)
+            yield return new WaitForSeconds(npcFirstDelay);
+
+        while (_npcQueue.Count > 0)
+        {
+            var line = _npcQueue.Dequeue();
+
+            if (chatLog != null)
+                chatLog.AddNpcMessage(line);
+
+            if (_npcQueue.Count > 0 && npcLineInterval > 0f)
+                yield return new WaitForSeconds(npcLineInterval);
+        }
+
+        _npcReplyRoutine = null;
+    }
+
+
+
+
+
 }
 
 /// <summary>
@@ -161,3 +245,4 @@ public class ChatCommandEntry
     // 키워드가 일치했을 때 실행할 이벤트
 
 }
+
