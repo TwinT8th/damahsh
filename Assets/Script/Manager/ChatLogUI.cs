@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,7 +14,57 @@ public class ChatLogUI : MonoBehaviour
     [Header("Auto Scroll")]
     [SerializeField] private bool autoScrollToBottom = true;
 
+    [Header("Limit On Screen")]
+    [SerializeField] private int maxMessagesOnScreen = 10;
+
+    private readonly List<GameObject> _spawned = new();
     private Coroutine _scrollCo;
+
+    private readonly List<string> _history = new();
+    public IReadOnlyList<string> History => _history;
+
+    [System.Serializable]
+    private class ChatHistoryData
+    {
+        public List<string> lines = new();
+    }
+
+    public void SaveHistoryToJson(string fileName = "chatlog.json")
+    {
+        try
+        {
+            var data = new ChatHistoryData { lines = new List<string>(_history) };
+            string json = JsonUtility.ToJson(data, true);
+
+            string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
+            System.IO.File.WriteAllText(path, json);
+
+            Debug.Log($"[ChatLogUI] Saved: {path} (lines={_history.Count})");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[ChatLogUI] Save failed: {e}");
+        }
+    }
+
+
+    public void LoadHistoryFromJson(string fileName = "chatlog.json")
+    {
+        string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
+        if (!System.IO.File.Exists(path))
+        {
+            Debug.LogWarning($"[ChatLogUI] No file: {path}");
+            return;
+        }
+
+        string json = System.IO.File.ReadAllText(path);
+        var data = JsonUtility.FromJson<ChatHistoryData>(json);
+        _history.Clear();
+        if (data != null && data.lines != null) _history.AddRange(data.lines);
+
+        Debug.Log($"[ChatLogUI] Loaded lines: {_history.Count}");
+    }
+
 
     public void AddPlayerMessage(string text)
     {
@@ -34,15 +85,43 @@ public class ChatLogUI : MonoBehaviour
         }
 
         tmp.text = text;
+        _history.Add(text);
 
         if (autoScrollToBottom)
             ScrollToBottom();
+
+        _spawned.Add(go);
+
+        if (maxMessagesOnScreen > 0 && _spawned.Count > maxMessagesOnScreen)
+        {
+            int removeCount = _spawned.Count - maxMessagesOnScreen;
+            for (int i = 0; i < removeCount; i++)
+            {
+                if (_spawned[0] != null)
+                    Destroy(_spawned[0]);
+                _spawned.RemoveAt(0);
+            }
+        }
+
+
     }
 
     public void AddNpcMessage(string text)
     {
         AddPlayerMessage(text);
     }
+
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause) SaveHistoryToJson();
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveHistoryToJson();
+    }
+
 
     private void ScrollToBottom()
     {
