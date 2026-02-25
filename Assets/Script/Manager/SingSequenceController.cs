@@ -41,8 +41,7 @@ public class SingSequenceController : MonoBehaviour
     [SerializeField] private float bounceTime = 0.18f;     // 첫 바운스(위/아래 한 번)의
 
 
-    [Header("SingingMouth")]
-    [SerializeField] private SpriteRenderer mouthSprite;
+ 
 
     private Coroutine _routine;
 
@@ -60,10 +59,6 @@ public class SingSequenceController : MonoBehaviour
         if (mic != null && micStart != null)
             mic.position = micStart.position;
 
-        if (mouthSprite != null)
-        {
-            mouthSprite.enabled = false;
-        }
 
     }
     public void StartSingSequence()
@@ -97,10 +92,7 @@ public class SingSequenceController : MonoBehaviour
 
         yield return new WaitForSeconds(1f);
 
-        if (mouthSprite != null)
-        {
-            mouthSprite.enabled = true;
-        }
+
 
         _routine = null;
     }

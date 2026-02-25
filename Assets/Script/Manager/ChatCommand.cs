@@ -18,12 +18,35 @@ public class ChatCommand : MonoBehaviour
     [Header("NPC Reply Queue")]
     [SerializeField] private float npcFirstDelay = 1f;     // 첫 답장까지 대기
     [SerializeField] private float npcLineInterval = 0.8f; // 줄과 줄 사이 간격
+    [SerializeField] private AudioSource voiceSource;
 
- 
+    [Header("Voice Clips")]
+    [SerializeField] private AudioClip helloClip;
+    [SerializeField] private AudioClip introClip1;
+    [SerializeField] private AudioClip introClip2;
+
+    [Header("SingingMouth")]
+    [SerializeField] private SpriteRenderer mouthSprite;
+
+
     private readonly Dictionary<string, ChatCommandEntry> _map = new();
 
-    private readonly Queue<string> _npcQueue = new();
+    [Serializable]
+    private class NpcLine
+    {
+        public string text;
+        public AudioClip voice;
+
+        public NpcLine(string text, AudioClip voice)
+        {
+            this.text = text;
+            this.voice = voice;
+        }
+    }
+
+    private readonly Queue<NpcLine> _npcQueue = new();
     private Coroutine _npcReplyRoutine;
+    private Coroutine _mouthRoutine;
 
 
     // Start is called before the first frame update
@@ -40,6 +63,11 @@ public class ChatCommand : MonoBehaviour
         BuildMap();
 
         inputField.onSubmit.AddListener(_ => Submit()); //Enter누르면 Submit()실행, PC전용
+
+        if (mouthSprite != null)
+        {
+            mouthSprite.enabled = false;
+        }
 
     }
 
@@ -126,12 +154,14 @@ public class ChatCommand : MonoBehaviour
         //------------------------------------------------
         if (chatLog != null && (ContainsWord(key, "hi") || ContainsWord(key, "hello")))
         {
-            EnqueueNpc("> 안녕.");
+            EnqueueNpc(new NpcLine("> 안녕.", helloClip));
         }
 
         if (chatLog != null && ContainsWord(key, "name"))
         {
-            EnqueueNpc("> 나?", "> 부르고 싶은 대로 불러.");
+            EnqueueNpc(new NpcLine("> 나는 희소한이라고 해", introClip1));
+            EnqueueNpc(new NpcLine("> 반가워", introClip2));
+
         }
 
         // 8) 기존 명령 실행 로직 유지
@@ -149,6 +179,15 @@ public class ChatCommand : MonoBehaviour
         else
         {
             Debug.Log($"[ChatCommand] 매칭 실패: '{raw}'");
+        }
+    }
+
+
+    public void MuteHSH()
+    {
+        if (mouthSprite != null)
+        {
+            mouthSprite.enabled = false;
         }
     }
 
@@ -183,21 +222,19 @@ public class ChatCommand : MonoBehaviour
 
 
 
-    private void EnqueueNpc(params string[] lines)
+    private void EnqueueNpc(params NpcLine[] lines)
     {
         if (lines == null || lines.Length == 0) return;
 
         foreach (var line in lines)
         {
-            if (!string.IsNullOrWhiteSpace(line))
+            if (!string.IsNullOrWhiteSpace(line.text))
                 _npcQueue.Enqueue(line);
         }
 
-        // 이미 실행 중이면 그냥 큐에만 쌓고 끝
         if (_npcReplyRoutine == null)
             _npcReplyRoutine = StartCoroutine(CoNpcReplyQueue());
     }
-
     private IEnumerator CoNpcReplyQueue()
     {
         // 첫 답장 딜레이 (사람이 생각하다 답장하는 느낌)
@@ -209,7 +246,21 @@ public class ChatCommand : MonoBehaviour
             var line = _npcQueue.Dequeue();
 
             if (chatLog != null)
-                chatLog.AddNpcMessage(line);
+                chatLog.AddNpcMessage(line.text);
+
+            if (voiceSource != null && line.voice != null)
+            {
+                voiceSource.PlayOneShot(line.voice);
+
+                PlayMouth(line.voice.length);
+
+                while (voiceSource.isPlaying)
+                    yield return null;
+            }
+            else
+            {
+                yield return new WaitForSeconds(npcLineInterval);
+            }
 
             if (_npcQueue.Count > 0 && npcLineInterval > 0f)
                 yield return new WaitForSeconds(npcLineInterval);
@@ -219,6 +270,21 @@ public class ChatCommand : MonoBehaviour
     }
 
 
+    private void PlayMouth(float sec)
+    {
+        if (mouthSprite == null) return;
+
+        if (_mouthRoutine != null) StopCoroutine(_mouthRoutine);
+        _mouthRoutine = StartCoroutine(CoMouth(sec));
+    }
+
+    private IEnumerator CoMouth(float sec)
+    {
+        mouthSprite.enabled = true;
+        yield return new WaitForSeconds(sec);
+        mouthSprite.enabled = false;
+        _mouthRoutine = null;
+    }
 
 
 
