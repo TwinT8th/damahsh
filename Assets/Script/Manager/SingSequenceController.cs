@@ -1,128 +1,242 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
-//using static UnityEngine.Rendering.DebugUI.Table;
-
-/// <summary>
-/// "sing" ÀÔ·Â ½Ã ¿¬Ãâ ½ÃÄö½º ½ÇÇà:
-/// 1) ÀÌ¹ÌÁö1 Ç¥½Ã -> 4ÃÊ
-/// 2) ÀÌ¹ÌÁö2·Î ±³Ã¼ -> 2ÃÊ
-/// 3) ¸¶ÀÌÅ© ½ºÇÁ¶óÀÌÆ®°¡ 2ÃÊ µ¿¾È ³»·Á¿È(ºÎµå·´°Ô/Áß·ÂÃ³·³) -> ¸ñÇ¥ À§Ä¡
-/// 4) Ä³¸¯ÅÍ Animator¸¦ sing »óÅÂ·Î ÀüÈ¯(·çÇÁ)
-/// "stop" ÀÔ·Â ½Ã ¾ğÁ¦µç ¿¬Ãâ/·çÇÁ Á¤Áö + ÃÊ±âÈ­
-/// </summary>
 public class SingSequenceController : MonoBehaviour
 {
-
     ScrollManager scrollManager;
 
     [Header("Room Overlays")]
-    [SerializeField] private GameObject darkOverlay;       // ±ô±ôÇÑ ¹æ µ¤°³
-    [SerializeField] private GameObject spotlightOverlay;  // ½ºÆ÷Æ®¶óÀÌÆ® µ¤°³
+    [SerializeField] private GameObject darkOverlay;       // ê¹œê¹œí•œ ë°© ë®ê°œ
+    [SerializeField] private GameObject spotlightOverlay;  // ìŠ¤í¬íŠ¸ë¼ì´íŠ¸ ë®ê°œ
 
     [Header("Timing")]
-    [SerializeField] private float delayBeforeDark = 2f;       // 2ÃÊ ÈÄ ±ô±ô
-    [SerializeField] private float darkDuration = 4f;          // 2ÃÊ À¯Áö ÈÄ ½ºÆ÷Æ®¶óÀÌÆ®
+    [SerializeField] private float delayBeforeDark = 2f;   // 2ì´ˆ í›„ ê¹œê¹œ
+    [SerializeField] private float darkDuration = 3f;      // 3ì´ˆ ìœ ì§€ í›„ ìŠ¤í¬íŠ¸ë¼ì´íŠ¸
 
     [Header("Mic Drop")]
-    [SerializeField] private Transform mic;           // ¸¶ÀÌÅ© ½ºÇÁ¶óÀÌÆ® ¿ÀºêÁ§Æ®
-    [SerializeField] private Transform micStart;      // È­¸é À§(¼û°ÜÁø À§Ä¡) ºó ¿ÀºêÁ§Æ®
-    [SerializeField] private Transform micTarget;     // ¸ØÃâ À§Ä¡(¾Æ¹ÙÅ¸ ¾Õ) ºó ¿ÀºêÁ§Æ®
+    [SerializeField] private Transform mic;
+    [SerializeField] private Transform micStart;
+    [SerializeField] private Transform micTarget;
     [SerializeField] private float micDropDuration = 2f;
-    // ºü¸£°Ô -> ´À¸®°Ô(°¨¼Ó) ¿ë Ä¿ºê
-    // ±âº»°ª: EaseOut (Ã³À½ ºü¸£°í ³¡¿¡¼­ ´À·ÁÁü)
     [SerializeField]
     private AnimationCurve micDropCurve =
         new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
+
     [Header("Mic Bounce")]
-    [SerializeField] private int bounceCount = 3;          // ÅëÅë ¸î ¹ø? (2 ÀÌ»ó)
-    [SerializeField] private float bounceHeight = 0.8f;    // Ã¹ Æ¢¾î¿À¸§ ³ôÀÌ(¿ùµå ´ÜÀ§)
-    [SerializeField] private float bounceDamping = 0.55f;  // ´ÙÀ½ ³ôÀÌ´Â ¸î ¹è·Î ÁÙÀÏÁö(0~1)
-    [SerializeField] private float bounceTime = 0.18f;     // Ã¹ ¹Ù¿î½º(À§/¾Æ·¡ ÇÑ ¹ø)ÀÇ
+    [SerializeField] private int bounceCount = 3;
+    [SerializeField] private float bounceHeight = 0.8f;
+    [SerializeField] private float bounceDamping = 0.55f;
+    [SerializeField] private float bounceTime = 0.18f;
 
-
- 
+    [Header("Test Sequence")]
+    [SerializeField] private ChatCommand chatCommand;   // ë³´ì´ìŠ¤+ì… ë‹´ë‹¹
+    [SerializeField] private AudioClip testVoice;       // í…ŒìŠ¤íŠ¸ ë³´ì´ìŠ¤
+    [SerializeField] private float afterMicDelay = 2f;  // ë§ˆì´í¬ í›„ ë”œë ˆì´
+    [SerializeField] private float afterVoiceDelay = 2f;// ë³´ì´ìŠ¤ í›„ ë”œë ˆì´
+    [SerializeField] private bool showTextInChat = false;
+    [SerializeField] private string testText = "> (í…ŒìŠ¤íŠ¸ ë³´ì´ìŠ¤)";
 
     private Coroutine _routine;
-
 
     void Start()
     {
         scrollManager = FindObjectOfType<ScrollManager>();
 
-        if (darkOverlay != null)
-            darkOverlay.SetActive(false);
+        if (darkOverlay != null) darkOverlay.SetActive(false);
+        if (spotlightOverlay != null) spotlightOverlay.SetActive(false);
 
-        if (spotlightOverlay != null)
-            spotlightOverlay.SetActive(false);
-        // ½ÃÀÛ ½Ã ¸¶ÀÌÅ©´Â È­¸é ¹Û¿¡ ¼û°ÜµÎ±â
         if (mic != null && micStart != null)
             mic.position = micStart.position;
-
-
     }
+
     public void StartSingSequence()
     {
-   
         if (scrollManager == null)
         {
-            Debug.Log("[SingSequenceController] ScrollManager ÂüÁ¶°¡ ºñ¾ú½À´Ï´Ù.");
+            Debug.Log("[SingSequenceController] ScrollManager ì°¸ì¡°ê°€ ë¹„ì—ˆìŠµë‹ˆë‹¤.");
             return;
         }
+
+        // ì´ë¯¸ ì—°ì¶œ ì¤‘ì´ë©´ ì¤‘ë³µ ì‹œì‘ ë°©ì§€
+        if (_routine != null) return;
+
         _routine = StartCoroutine(CoSingSequence());
+    }
+
+    public void StartTestSequence()
+    {
+        StopCurrentRoutine();
+        _routine = StartCoroutine(CoTestSequence());
+    }
+
+    // bye ì…ë ¥ ì‹œ í˜¸ì¶œí•  í•¨ìˆ˜
+    public void StartByeSequence()
+    {
+        // ì§„í–‰ ì¤‘ì´ë˜ sing(ë˜ëŠ” ë‹¤ë¥¸ ì—°ì¶œ) ì¦‰ì‹œ ì¤‘ë‹¨
+        StopCurrentRoutine();
+
+        // ì—­ì¬ìƒ(ì›ë³µ) ì‹œì‘
+        _routine = StartCoroutine(CoByeSequence());
+    }
+
+    private void StopCurrentRoutine()
+    {
+        if (_routine != null)
+        {
+            StopCoroutine(_routine);
+            _routine = null;
+        }
     }
 
     private IEnumerator CoSingSequence()
     {
-        // 0) ¹æ Áß¾Ó °íÁ¤ (³Ê°¡ ÀÌ¹Ì ¿Ï¼ºÇÑ ´Ü°è)
         scrollManager.MoveForAction();
 
-        // 1) nÃÊ ±â´Ù·È´Ù°¡ ±ô±ô
         yield return new WaitForSeconds(delayBeforeDark);
         SetOverlay(darkOn: true, spotOn: false);
 
-        // 2) nÃÊ µÚ ½ºÆ÷Æ®¶óÀÌÆ®
         yield return new WaitForSeconds(darkDuration);
         SetOverlay(darkOn: false, spotOn: true);
 
-        // ¿©±â¼­ºÎÅÍ ´ÙÀ½ ´Ü°è(ÀÌ¹ÌÁö ±³Ã¼, ¸¶ÀÌÅ© µå¶ø, ¾Ö´Ï sing) ÀÌ¾îºÙÀÌ¸é µÊ
-
-        //¸¶ÀÌÅ© µå¶ø
         yield return StartCoroutine(DropMic());
 
         yield return new WaitForSeconds(1f);
 
+        _routine = null;
+    }
 
+    //  ì—­ì¬ìƒ(ì›ë³µ) ì‹œí€€ìŠ¤
+    private IEnumerator CoByeSequence()
+    {
+        // 1) ë§ˆì´í¬ê°€ ë‚´ë ¤ì™€ ìˆìœ¼ë©´ â†’ ìœ„ë¡œ ì˜¬ë ¤ì„œ ìˆ¨ê¹€ ìœ„ì¹˜ë¡œ
+        if (mic != null && micStart != null)
+        {
+            // micStartì™€ ì¶©ë¶„íˆ ë–¨ì–´ì ¸ ìˆìœ¼ë©´ ë³µê·€ ì• ë‹ˆë©”ì´ì…˜
+            if (Vector3.Distance(mic.position, micStart.position) > 0.001f)
+                yield return StartCoroutine(ReturnMic());
+            else
+                mic.position = micStart.position;
+        }
+
+        // 2) ìŠ¤í¬íŠ¸ë¼ì´íŠ¸ê°€ ì¼œì ¸ ìˆì—ˆë‹¤ë©´ â†’ ì–´ë‘ ìœ¼ë¡œ(ì—­ë°©í–¥ ëŠë‚Œ)
+        bool spotWasOn = spotlightOverlay != null && spotlightOverlay.activeSelf;
+        bool darkWasOn = darkOverlay != null && darkOverlay.activeSelf;
+
+        if (spotWasOn)
+        {
+            SetOverlay(darkOn: true, spotOn: false);
+
+            if (darkDuration > 0f)
+                yield return new WaitForSeconds(darkDuration);
+        }
+
+        // ë°”ë¡œ ì›ë˜ ìƒíƒœ
+        SetOverlay(false, false);
+       
+
+        if (scrollManager != null)
+            scrollManager.ReleaseAfterAction();
 
         _routine = null;
     }
-    private void SetOverlay(bool darkOn, bool spotOn)
-    {
-        if (darkOverlay != null)
-            darkOverlay.SetActive(darkOn);
 
-        if (spotlightOverlay != null)
-            spotlightOverlay.SetActive(spotOn);
+    private IEnumerator CoTestSequence()
+    {
+        if (scrollManager == null)
+        {
+            Debug.Log("[SingSequenceController] ScrollManager ì°¸ì¡°ê°€ ë¹„ì—ˆìŠµë‹ˆë‹¤.");
+            _routine = null;
+            yield break;
+        }
+
+        // 1) singê³¼ ë™ì¼
+        scrollManager.MoveForAction();
+
+        yield return new WaitForSeconds(delayBeforeDark);
+        SetOverlay(darkOn: true, spotOn: false);
+
+        yield return new WaitForSeconds(darkDuration);
+        SetOverlay(darkOn: false, spotOn: true);
+
+        yield return StartCoroutine(DropMic());
+
+        // 2) ë§ˆì´í¬ ë‚´ë ¤ì˜¨ ë’¤ 2ì´ˆ
+        if (afterMicDelay > 0f)
+            yield return new WaitForSeconds(afterMicDelay);
+
+        // 3) ë³´ì´ìŠ¤ + ì…ë»ë”
+        if (chatCommand != null && testVoice != null)
+        {
+            yield return StartCoroutine(chatCommand.CoPlayVoiceOnly(
+                testVoice,
+                testText,
+                showTextInChat
+            ));
+        }
+        else
+        {
+            Debug.LogWarning("[SingSequenceController] chatCommand ë˜ëŠ” testVoiceê°€ ë¹„ì–´ìˆì–´ì„œ ë³´ì´ìŠ¤ë¥¼ ì¬ìƒí•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
+        }
+
+        // 4) ëë‚˜ê³  2ì´ˆ
+        if (afterVoiceDelay > 0f)
+            yield return new WaitForSeconds(afterVoiceDelay);
+
+        // 5) bye(ì—­ì¬ìƒ)
+        yield return StartCoroutine(CoByeSequence());
+
+        _routine = null;
     }
 
-    // ³ªÁß¿¡ stop¿¡¼­ È£ÃâÇÒ ¿ëµµ(¿¬Ãâ ÃÊ±âÈ­)
+    private void SetOverlay(bool darkOn, bool spotOn)
+    {
+        if (darkOverlay != null) darkOverlay.SetActive(darkOn);
+        if (spotlightOverlay != null) spotlightOverlay.SetActive(spotOn);
+    }
+
     public void ResetOverlays()
     {
         SetOverlay(false, false);
     }
 
+    // ë‚´ë ¤ì˜¨ ë§ˆì´í¬ë¥¼ ìœ„ë¡œ ë˜ëŒë¦¬ëŠ” ì½”ë£¨í‹´ (ì—­ë°©í–¥)
+    private IEnumerator ReturnMic()
+    {
+        if (mic == null || micStart == null) yield break;
 
-    // Áß·Â ´À³¦(Á¡Á¡ »¡¶óÁü) + ¸¶Áö¸·¿¡ »ìÂ¦ ¹Ù¿î½º(¿À¹ö½´Æ® 1È¸) ÈÄ Á¤Áö
-    // Áß·Â ´À³¦(Á¡Á¡ »¡¶óÁü) + °í¹«°øÃ³·³ ÅëÅë(¿©·¯ ¹ø, Á¡Á¡ ³·¾ÆÁü)
+        Vector3 from = mic.position;
+        Vector3 to = micStart.position;
+
+        float dur = Mathf.Max(0.01f, micDropDuration);
+        float t = 0f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / dur;
+
+            // ë‚´ë ¤ì˜¬ ë•Œ ì¼ë˜ ì»¤ë¸Œë¥¼ ì—­ìœ¼ë¡œ ì“°ë©´ ëŠë‚Œì´ ê¹”ë”í•¨
+            float x = Mathf.Clamp01(t);
+            float eased = (micDropCurve != null)
+                ? micDropCurve.Evaluate(1f - x) // ì—­ì»¤ë¸Œ
+                : 1f - (x * x);
+
+            // easedëŠ” 1->0ìœ¼ë¡œ ê°€ëŠ” ê°’ì´ë‹ˆ, ë³´ê°„ì„ ë°˜ëŒ€ë¡œ
+            mic.position = Vector3.LerpUnclamped(to, from, eased);
+
+            yield return null;
+        }
+
+        mic.position = to;
+    }
+
     private IEnumerator DropMic()
     {
         if (mic == null || micStart == null || micTarget == null)
         {
-            Debug.LogError("[SingSequenceController] mic/micStart/micTarget ÂüÁ¶°¡ ºñ¾ú½À´Ï´Ù.");
+            Debug.LogError("[SingSequenceController] mic/micStart/micTarget ì°¸ì¡°ê°€ ë¹„ì—ˆìŠµë‹ˆë‹¤.");
             yield break;
         }
 
-        // ½ÃÀÛ À§Ä¡(È­¸é ¹Û)·Î ½º³À
         mic.position = micStart.position;
 
         Vector3 from = micStart.position;
@@ -130,13 +244,11 @@ public class SingSequenceController : MonoBehaviour
 
         float dur = Mathf.Max(0.01f, micDropDuration);
 
-        // ----- 1) °¡¼Ó ³«ÇÏ(Áß·Â ´À³¦) -----
         float t = 0f;
         while (t < 1f)
         {
             t += Time.deltaTime / dur;
 
-            // EaseIn(ÃÊ¹İ ´À¸² -> ÈÄ¹İ ºü¸§) : Ä¿ºê ¾øÀ¸¸é t^2
             float eased = (micDropCurve != null)
                 ? micDropCurve.Evaluate(Mathf.Clamp01(t))
                 : Mathf.Clamp01(t) * Mathf.Clamp01(t);
@@ -146,14 +258,10 @@ public class SingSequenceController : MonoBehaviour
         }
         mic.position = to;
 
-        // ----- 2) ÅëÅë ¹Ù¿î½º(Á¡Á¡ ÁÙ¾îµê) -----
-        // ¹Ù¿î½º ¹æÇâ: "À§·Î" (¸¸È­Àû °í¹«°ø ´À³¦)
         Vector3 up = Vector3.up;
 
-        // Ã¹ ¹Ù¿î½º ³ôÀÌ/½Ã°£
         float height = Mathf.Max(0f, bounceHeight);
-        float halfTime = Mathf.Max(0.01f, bounceTime); // À§·Î °¡´Â ½Ã°£, ¾Æ·¡·Î °¡´Â ½Ã°£(°¢°¢)
-
+        float halfTime = Mathf.Max(0.01f, bounceTime);
         int count = Mathf.Max(0, bounceCount);
 
         for (int i = 0; i < count; i++)
@@ -162,21 +270,13 @@ public class SingSequenceController : MonoBehaviour
 
             Vector3 peak = to + up * height;
 
-            // ¹Ù´Ú(to) -> ²À´ë±â(peak) : ºü¸£°Ô Æ¢¾î¿À¸£°í
             yield return StartCoroutine(LerpPosition(to, peak, halfTime, easeOut: true));
-
-            // ²À´ë±â(peak) -> ¹Ù´Ú(to) : Á» ´õ ºü¸£°Ô ¶³¾îÁö´Â ´À³¦(°¡¼Ó) ÁÖ±â
-            // (¸¸È­Ã³·³ Åë!Åë!Àº ¶³¾îÁú ¶§µµ »¡¶ó¾ß ¸ÀÀÌ ³²)
             yield return StartCoroutine(LerpPosition(peak, to, halfTime, easeOut: false));
 
-            // ´ÙÀ½ ¹Ù¿î½º´Â ´õ ³·°Ô + ¾à°£ ´õ Âª°Ô(ÅÛÆ÷ ¾÷)
             height *= Mathf.Clamp01(bounceDamping);
-
         }
     }
 
-    // º¸Á¶: µÎ ÁöÁ¡ »çÀÌ¸¦ ºÎµå·´°Ô ÀÌµ¿
-    // º¸Á¶: µÎ ÁöÁ¡ »çÀÌ¸¦ ºÎµå·´°Ô ÀÌµ¿ (easeOut = true¸é ³¡¿¡¼­ °¨¼Ó, false¸é °¡¼Ó)
     private IEnumerator LerpPosition(Vector3 a, Vector3 b, float duration, bool easeOut)
     {
         float t = 0f;
@@ -187,11 +287,9 @@ public class SingSequenceController : MonoBehaviour
             t += Time.deltaTime / dur;
             float x = Mathf.Clamp01(t);
 
-            // easeOut: Ã³À½ ºü¸£°í ³¡¿¡¼­ ´À·ÁÁü (Æ¢¾î¿À¸¦ ¶§ "Åë!" ´À³¦)
-            // easeIn : Ã³À½ ´À¸®°í ³¡¿¡¼­ »¡¶óÁü (¶³¾îÁú ¶§ "Áß·Â" ´À³¦)
             float eased = easeOut
-                ? 1f - Mathf.Pow(1f - x, 2f)   // easeOutQuad
-                : x * x;                       // easeInQuad
+                ? 1f - Mathf.Pow(1f - x, 2f)
+                : x * x;
 
             mic.position = Vector3.LerpUnclamped(a, b, eased);
             yield return null;
@@ -199,7 +297,4 @@ public class SingSequenceController : MonoBehaviour
 
         mic.position = b;
     }
-
-
-
 }

@@ -2960,10 +2960,10 @@ MonoBehaviour:
   hshSprite: {fileID: 29279368}
   idleAnimSpeed: 1
   walkAnimSpeed: 1
-  leftLimit: -7.36
+  leftLimit: -6.7
   rightLimit: 0
   bottomLimit: -1.94
-  topLimit: -0.76
+  topLimit: 0.9
   roomSafePoints:
   - {fileID: 1693959218}
   - {fileID: 1123982757}
@@ -3738,7 +3738,7 @@ GameObject:
   - component: {fileID: 695554191}
   - component: {fileID: 695554192}
   m_Layer: 0
-  m_Name: Sing
+  m_Name: Sequence
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3752,12 +3752,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 695554190}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1735539552}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &695554192
 MonoBehaviour:
@@ -3773,7 +3773,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   darkOverlay: {fileID: 409943032}
   spotlightOverlay: {fileID: 1378262545}
-  delayBeforeDark: 3
+  delayBeforeDark: 2
   darkDuration: 3
   mic: {fileID: 416157738}
   micStart: {fileID: 2054823541}
@@ -3807,6 +3807,12 @@ MonoBehaviour:
   bounceHeight: 0.8
   bounceDamping: 0.55
   bounceTime: 0.18
+  chatCommand: {fileID: 1243330946}
+  testVoice: {fileID: 8300000, guid: d4e0e8018ee520944831c9edf4c094db, type: 3}
+  afterMicDelay: 2
+  afterVoiceDelay: 2
+  showTextInChat: 1
+  testText: '> (singing...)'
 --- !u!1 &710048426
 GameObject:
   m_ObjectHideFlags: 0
@@ -5303,6 +5309,40 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+  - keyword: Bye
+    oneShot: 0
+    onMatched:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 695554192}
+          m_TargetAssemblyTypeName: SingSequenceController, Assembly-CSharp
+          m_MethodName: StartByeSequence
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - keyword: test
+    oneShot: 0
+    onMatched:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 695554192}
+          m_TargetAssemblyTypeName: SingSequenceController, Assembly-CSharp
+          m_MethodName: StartTestSequence
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
   chatLog: {fileID: 666616768}
   npcFirstDelay: 1
   npcLineInterval: 0.8
@@ -5311,6 +5351,7 @@ MonoBehaviour:
   introClip1: {fileID: 8300000, guid: 4aff5fb89da8f434cb72d56f3c2b636c, type: 3}
   introClip2: {fileID: 8300000, guid: 79954f82c0ced1e4c925b28e8d5dbf2b, type: 3}
   mouthSprite: {fileID: 301407758}
+  singSequenceController: {fileID: 695554192}
 --- !u!1 &1287218459
 GameObject:
   m_ObjectHideFlags: 0
@@ -6086,37 +6127,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438753444}
   m_CullTransparentMesh: 1
---- !u!1 &1442038743
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1442038744}
-  m_Layer: 0
-  m_Name: Hi
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1442038744
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1442038743}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1735539552}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1480407838
 GameObject:
   m_ObjectHideFlags: 0
@@ -7138,39 +7148,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1735064268}
   m_CullTransparentMesh: 1
---- !u!1 &1735539551
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1735539552}
-  m_Layer: 0
-  m_Name: Sequence
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1735539552
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1735539551}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1442038744}
-  - {fileID: 695554191}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1766926171
 GameObject:
   m_ObjectHideFlags: 0
@@ -7538,6 +7515,7 @@ GameObject:
   - component: {fileID: 1882584137}
   - component: {fileID: 1882584139}
   - component: {fileID: 1882584138}
+  - component: {fileID: 1882584140}
   m_Layer: 5
   m_Name: Btn_Mute
   m_TagString: Untagged
@@ -7561,7 +7539,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 416, y: -490}
+  m_AnchoredPosition: {x: -151, y: -382}
   m_SizeDelta: {x: 30, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1882584138
@@ -7602,6 +7580,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1882584136}
   m_CullTransparentMesh: 1
+--- !u!114 &1882584140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1882584136}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 1882584138}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1243330946}
+        m_TargetAssemblyTypeName: ChatCommand, Assembly-CSharp
+        m_MethodName: DisableMouth
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1895597592
 GameObject:
   m_ObjectHideFlags: 0
@@ -7780,6 +7814,7 @@ GameObject:
   - component: {fileID: 1995913633}
   - component: {fileID: 1995913635}
   - component: {fileID: 1995913634}
+  - component: {fileID: 1995913636}
   m_Layer: 5
   m_Name: Btn_Mic
   m_TagString: Untagged
@@ -7803,7 +7838,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 205, y: -490}
+  m_AnchoredPosition: {x: -836, y: -382}
   m_SizeDelta: {x: 30, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1995913634
@@ -7844,6 +7879,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1995913632}
   m_CullTransparentMesh: 1
+--- !u!114 &1995913636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995913632}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 1995913634}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1243330946}
+        m_TargetAssemblyTypeName: ChatCommand, Assembly-CSharp
+        m_MethodName: EnableMouth
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2054823540
 GameObject:
   m_ObjectHideFlags: 0
@@ -8219,4 +8310,4 @@ SceneRoots:
   - {fileID: 617805045}
   - {fileID: 958092390}
   - {fileID: 1846875874}
-  - {fileID: 1735539552}
+  - {fileID: 695554191}

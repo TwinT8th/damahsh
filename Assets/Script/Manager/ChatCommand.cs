@@ -28,6 +28,9 @@ public class ChatCommand : MonoBehaviour
     [Header("SingingMouth")]
     [SerializeField] private SpriteRenderer mouthSprite;
 
+    [Header("Sequences")]
+    [SerializeField] private SingSequenceController singSequenceController;
+
 
     private readonly Dictionary<string, ChatCommandEntry> _map = new();
 
@@ -154,7 +157,7 @@ public class ChatCommand : MonoBehaviour
         //------------------------------------------------
         if (chatLog != null && (ContainsWord(key, "hi") || ContainsWord(key, "hello")))
         {
-            EnqueueNpc(new NpcLine("> 안녕.", helloClip));
+            EnqueueNpc(new NpcLine("> 안녕하세요.", helloClip));
         }
 
         if (chatLog != null && ContainsWord(key, "name"))
@@ -162,6 +165,12 @@ public class ChatCommand : MonoBehaviour
             EnqueueNpc(new NpcLine("> 나는 희소한이라고 해", introClip1));
             EnqueueNpc(new NpcLine("> 반가워", introClip2));
 
+        }
+
+        if (ContainsWord(key, "test"))
+        {
+            // SingSequenceController 참조를 잡아두고 호출
+            singSequenceController.StartTestSequence();
         }
 
         // 8) 기존 명령 실행 로직 유지
@@ -286,6 +295,44 @@ public class ChatCommand : MonoBehaviour
         _mouthRoutine = null;
     }
 
+    public void EnableMouth()
+    {
+        if (mouthSprite == null) return;
+
+        if (!mouthSprite.enabled)
+            mouthSprite.enabled = true;
+    }
+
+    public void DisableMouth()
+    {
+        if (mouthSprite == null) return;
+
+        if (mouthSprite.enabled)
+            mouthSprite.enabled = false;
+    }
+
+    public IEnumerator CoPlayVoiceOnly(AudioClip clip, string optionalText = null, bool showText = false)
+    {
+        if (clip == null) yield break;
+
+        // 텍스트도 나오게 하고 싶으면 옵션으로
+        if (showText && chatLog != null && !string.IsNullOrEmpty(optionalText))
+            chatLog.AddNpcMessage(optionalText);
+
+        // AudioSource 없으면 입만이라도
+        if (voiceSource == null)
+        {
+            PlayMouth(clip.length);
+            yield return new WaitForSeconds(clip.length);
+            yield break;
+        }
+
+        voiceSource.PlayOneShot(clip);
+        PlayMouth(clip.length);
+
+        // PlayOneShot은 isPlaying이 애매해질 수 있어서 length로 기다리는 게 안전
+        yield return new WaitForSeconds(clip.length);
+    }
 
 
 }

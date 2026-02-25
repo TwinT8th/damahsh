@@ -273,4 +273,24 @@ public class ScrollManager : MonoBehaviour
         FindNearestRoomAndSnap();
     }
 
+    public void ReleaseAfterAction()
+    {
+        holdCharacterAfterSnap = false;
+
+        // 연출 중 스냅이 아직 도는 중이면 멈추는 게 안전
+        if (snapRoutine != null)
+        {
+            StopCoroutine(snapRoutine);
+            snapRoutine = null;
+        }
+
+        if (character != null)
+        {
+            // 카메라에 붙였던 거 원복 (원래 부모가 따로 있으면 그걸 저장해두는 게 최선)
+            character.transform.SetParent(null, true);
+
+            // 이동 다시 허용
+            character.Unfreeze(); 
+        }
+    }
 }
